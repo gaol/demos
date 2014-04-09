@@ -41,14 +41,13 @@ public class ThreadsUsageDemo
       CmdLineParser parser = new CmdLineParser(demo);
       try
       {
-         if (args != null && args.length > 1)
+         if (args != null)
          {
             parser.parseArgument(args);
          }
       }
       catch (CmdLineException e)
       {
-         e.printStackTrace();
          parser.printUsage(System.out);
          return;
       }
