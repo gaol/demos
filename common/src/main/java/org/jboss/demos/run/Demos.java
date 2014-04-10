@@ -6,12 +6,12 @@ package org.jboss.demos.run;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -122,11 +122,15 @@ public class Demos {
 		try {
 			
 			URL top = new URL(baseURLStr.substring(0, baseURLStr.indexOf("org/jboss/demos/Demo.class")));
+			String configDir = System.getProperty("demos.classes.dir");
+			if (configDir != null) {
+				top = new File(configDir).toURI().toURL();
+			}
 			String topStr = top.toExternalForm();
 			if (topStr.endsWith(".jar!/")) {
 				// it is a jar
 				scanJarURL(top, indexer);
-			} else if (topStr.endsWith("/") && "file".equals(top.getProtocol())) {
+			} else if ("file".equals(top.getProtocol())) {
 				// it is a directory
 				scanDir(new File(top.getFile()), indexer);
 			} else {
@@ -139,17 +143,32 @@ public class Demos {
 		}
 		Index index = indexer.complete();
 		try {
-			composeDemos(index);
+			ClassLoader cl = getCurrentClassLoder();
+			composeDemos(index, cl);
 		} catch (ClassNotFoundException e) {
 			throw new RuntimeException("No Class Found!", e);
 		} catch (NoSuchMethodException e) {
 			throw new RuntimeException("No method found!", e);
 		} catch (SecurityException e) {
 			throw new RuntimeException("Security Exception!", e);
+		}catch (IOException e) {
+			throw new RuntimeException("IOException!", e);
 		}
 	}
+	
 
-	private void composeDemos(Index index) throws ClassNotFoundException, NoSuchMethodException, SecurityException {
+	private ClassLoader getCurrentClassLoder() throws IOException {
+		String configDir = System.getProperty("demos.classes.dir");
+		if (configDir != null) {
+			File file = new File(configDir);
+			if (file.exists() && file.isDirectory()) {
+				return new URLClassLoader(new URL[]{file.toURI().toURL()});
+			}
+		}
+		return getClass().getClassLoader();
+	}
+
+	private void composeDemos(Index index, ClassLoader cl) throws ClassNotFoundException, NoSuchMethodException, SecurityException {
 		List<AnnotationInstance> demoAnnoInstances = index.getAnnotations(DotName.createSimple(org.jboss.demos.Demo.class.getName()));
 		for (AnnotationInstance ai: demoAnnoInstances) {
 			AnnotationTarget target = ai.target();
@@ -161,7 +180,6 @@ public class Demos {
 				for (Type type : m.args()) {
 					parameterTypes.add(type.toString());
 				}
-				ClassLoader cl = getCurrentClassLoder();
 				Class<?> clazz = cl.loadClass(declaringClassName);
 				Class<?>[] params = new Class<?>[parameterTypes.size()];
 				int i = 0;
@@ -182,14 +200,9 @@ public class Demos {
 		}
 	}
 
-	private ClassLoader getCurrentClassLoder() {
-		return getClass().getClassLoader();
-	}
-
 	private void scanJarURL(URL top, final Indexer indexer) throws IOException, URISyntaxException {
 		String urlPath = top.getFile();
 		urlPath = urlPath.substring("file:".length(), urlPath.indexOf("!/"));
-		System.out.println(urlPath);
 		JarFile jarFile = new JarFile(urlPath);
 		try {
 			Enumeration<JarEntry> entries = jarFile.entries();

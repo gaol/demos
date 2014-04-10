@@ -26,14 +26,14 @@ public class DemoScanTest {
 		Assert.assertNotNull(demoList);
 		Assert.assertTrue(demoList.size() > 0);
 		
-		Demo waitDemo = demos.getDemo("waitMethod");
+		Demo waitDemo = demos.getDemo("demoWait");
 		Assert.assertNotNull(waitDemo);
-		Assert.assertEquals("waitMethod", waitDemo.getName());
-		Assert.assertEquals("demos show the wait method call.", waitDemo.getDescription());
+		Assert.assertEquals("demoWait", waitDemo.getName());
+		Assert.assertEquals("demos show the normal wait method call.", waitDemo.getDescription());
 		Method method = waitDemo.getMethod();
 		
 		Assert.assertNotNull(method);
-		Assert.assertEquals("waitMethod", method.getName());
+		Assert.assertEquals("demoWait", method.getName());
 		Assert.assertEquals(ThreadMethodsDemo.class, method.getDeclaringClass());
 	}
 }

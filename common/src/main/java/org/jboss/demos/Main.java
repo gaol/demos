@@ -4,15 +4,18 @@
 package org.jboss.demos;
 
 import java.io.IOException;
+import java.util.List;
 
+import org.jboss.aesh.cl.Arguments;
 import org.jboss.aesh.cl.CommandDefinition;
-import org.jboss.aesh.cl.Option;
+import org.jboss.aesh.cl.completer.OptionCompleter;
 import org.jboss.aesh.console.AeshConsole;
 import org.jboss.aesh.console.AeshConsoleBuilder;
 import org.jboss.aesh.console.Prompt;
 import org.jboss.aesh.console.command.Command;
 import org.jboss.aesh.console.command.CommandNotFoundException;
 import org.jboss.aesh.console.command.CommandResult;
+import org.jboss.aesh.console.command.completer.CompleterInvocation;
 import org.jboss.aesh.console.command.invocation.CommandInvocation;
 import org.jboss.aesh.console.command.registry.AeshCommandRegistryBuilder;
 import org.jboss.aesh.console.command.registry.CommandRegistry;
@@ -73,12 +76,16 @@ public class Main {
 	@CommandDefinition(name="help", description="Print this help. help --cmd COMMAND for single command information.")
 	private static class HelpCommand implements Command<CommandInvocation> {
 
-		@Option
-		private String cmd;
+		@Arguments(completer = ListCommandsCompleter.class)
+		private List<String> cmds;
 		
 		@Override
 		public CommandResult execute(CommandInvocation ci) throws IOException {
 			StringBuilder sb = new StringBuilder();
+			String cmd = null;
+			if (this.cmds != null && this.cmds.size() > 0) {
+				cmd = this.cmds.get(0);
+			}
 			if (cmd != null && cmd.length() > 0) {
 				String help = ci.getHelpInfo(cmd);
 				sb.append(help);
@@ -97,6 +104,19 @@ public class Main {
 			}
 			ci.getShell().out().println(sb.toString());
 			return CommandResult.SUCCESS;
+		}
+		
+		private static class ListCommandsCompleter implements OptionCompleter<CompleterInvocation> {
+
+			@Override
+			public void complete(CompleterInvocation completerInvocation) {
+				String currentValue = completerInvocation.getGivenCompleteValue();
+//				completerInvocation.
+//				for (String cmdName: completerInvocation.getCommandRegistry().getAllCommandNames()) {
+//					
+//				}
+			}
+			
 		}
 		
 	}

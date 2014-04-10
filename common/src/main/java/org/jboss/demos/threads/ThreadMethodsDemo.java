@@ -3,13 +3,7 @@
  */
 package org.jboss.demos.threads;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-
 import org.jboss.demos.Demo;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-import org.kohsuke.args4j.Option;
 
 /**
  * @author lgao
@@ -27,70 +21,181 @@ import org.kohsuke.args4j.Option;
  */
 public class ThreadMethodsDemo {
 	
-	@Option(name = "method", usage = "Specify which method do you want to execute.")
-	private String method = "usage";
-
-	public static void main(String[] args) throws Exception {
-		ThreadMethodsDemo demo = new ThreadMethodsDemo();
-		CmdLineParser parser = new CmdLineParser(demo);
-		try {
-			if (args != null) {
-				parser.parseArgument(args);
-			}
-		} catch (CmdLineException e) {
-			parser.printUsage(System.out);
-			return;
-		}
-		Method mtd = demo.getClass().getMethod(demo.method);
-		if (mtd == null)
-		{
-			throw new IllegalArgumentException("Can't find method: " + demo.method);
-		}
-		System.out.println("Start to invoke method: " + demo.method);
-		System.out.println(" ====================== ");
-		mtd.invoke(demo);
-		System.out.println();
-		System.out.println("End of invoke method: " + demo.method);
-		System.out.println(" ====================== ");
-	}
-	
-	public void usage()
-	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("Available methods are: \n");
-		for (Method m: this.getClass().getDeclaredMethods())
-		{
-			if (m.getModifiers() == Modifier.PUBLIC)
-			{
-				sb.append("\n\t" + m.getName());
-			}
-		}
-		System.out.println(sb);
-	}
-	
-	@Demo(name = "waitMethod", description = "demos show the wait method call.")
-	public void waitMethod()
-	{
+	// =======================================================
+	//   Demo of illegal wait method call - no synchronized
+	// =======================================================
+	@Demo(name = "illegalWaitNoSync", description = "demos show the illegal wait method call. (without synchronized keyword)")
+	public void demoIllegalWaitNoSync() {
 		Object obj = new Object();
 		try {
 			obj.wait();
 		}
 		catch (IllegalMonitorStateException imse)
 		{
-			System.out.println("Catched expected IllegalMonitorStateException: " + imse.getMessage() + "\n");
-			System.out.println("\t Because there is no sychronized block before Object.wait() is called.");
-			System.out.println("\nStack Trace is: \n");
+			System.out.println("  Catched expected IllegalMonitorStateException: " + imse);
+			System.out.println("  Stack Trace is: \n");
 			imse.printStackTrace();
 		}
 		catch (InterruptedException e) {
+			System.out.println("Single run won't cause the InterruptedException!!!");
 			e.printStackTrace();
 		}
 	}
 	
-	@Demo(name = "test", description = "test demo")
-	public void test()
-	{
-		System.out.println("\tHello, it works!");
+	// =======================================================
+	//   Demo of illegal wait method call - synchronized on different object
+	// =======================================================
+	@Demo(name = "illegalWaitDiffSync", description = "demos show the illegal wait method call.(synchronized on different object)")
+	public void demoIllegalWaitDiffSync() {
+		Object obj = new Object();
+		Object another = new Object();
+		try {
+			synchronized (another) {
+				obj.wait();
+			}
+		}
+		catch (IllegalMonitorStateException imse)
+		{
+			System.out.println("  Catched expected IllegalMonitorStateException: " + imse);
+			System.out.println("  Stack Trace is:");
+			imse.printStackTrace();
+		}
+		catch (InterruptedException e) {
+			System.out.println("  Single run won't cause the InterruptedException!!!");
+			e.printStackTrace();
+		}
+	}
+	
+	// =======================================================
+	//   Demo of legal wait method call
+	// =======================================================
+	@Demo(name = "demoWait", description = "demos show the normal wait method call.")
+	public void demoWait() {
+		final Object obj = new Object();
+		Thread t1 = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				synchronized (obj) {
+					try {
+						System.out.println("  It waits another thread to release monitor.");
+						obj.wait();
+						System.out.println("  After wait() returns, going on!");
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+				}
+			}
+		});
+		final Thread t2 = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				synchronized (obj) {
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					obj.notify();
+					System.out.println("  After notify, thread 1 will going on.");
+				}
+			}
+		});
+		t1.start();
+		t2.start();
+	}
+	
+	
+	// =======================================================
+	//   Demo of legal wait method call
+	// =======================================================
+	@Demo(name = "syncWithoutWait", description = "demos show normal synchronized block")
+	public void syncWithoutWait() {
+		final Object obj = new Object();
+		Thread t1 = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				synchronized (obj) {
+					System.out.println("  thread 1 holds the lock.");
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					System.out.println("It is thread 2's turn now!");
+				}
+			}
+		});
+		final Thread t2 = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				synchronized (obj) {
+					System.out.println("  thread 2 holds the lock");
+				}
+			}
+		});
+		t1.start();
+		try {
+			Thread.sleep(500); // wait thread 1 starts.
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		t2.start();
+	}
+	
+	// =======================================================
+	//   Demo of interrupt method call
+	// =======================================================
+	@Demo(name = "interrupt", description = "demos show the interrupt() method call")
+	public void interrupt() {
+		
+		final Object obj = new Object();
+		
+		final Thread t1 = new Thread() {
+			@Override
+			public void run() {
+				synchronized(obj) {
+					try {
+						obj.wait();
+						System.out.println("!!!!THIS LINE NEVER HAPPEN!!!!!");
+					} catch (InterruptedException e) {
+						System.out.println("!GOT YOU!");
+						System.out.println("isInterrupted() afterInterruptedException catch: " + isInterrupted());
+						e.printStackTrace();
+					}
+				}
+			}
+		};
+		
+		Thread t2 = new Thread() {
+			@Override
+			public void run() {
+				synchronized(obj) {
+					System.out.println("\ncall t1.interrupt()");
+					t1.interrupt();
+					System.out.println("Now, the interrupted state is: " + t1.isInterrupted());
+					try {
+						sleep(5000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					System.out.println("After sleep 5 seconds, it still happen before the InterruptedException catch.");
+				}
+				try {
+					sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				System.out.println("outside of the synchronized block won't happen before the InterruptedException catch.");
+			}
+		};
+		
+		t1.start();
+		t2.start();
 	}
 
 }
