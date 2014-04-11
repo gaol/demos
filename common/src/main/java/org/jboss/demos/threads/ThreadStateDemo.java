@@ -3,8 +3,6 @@
  */
 package org.jboss.demos.threads;
 
-import java.util.concurrent.Executor;
-
 import org.jboss.demos.Demo;
 
 /**

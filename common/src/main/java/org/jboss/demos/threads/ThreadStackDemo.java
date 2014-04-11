@@ -17,7 +17,8 @@ public class ThreadStackDemo {
 	@Demo(name = "stackOverflow", description = "demos show the stack overflow error")
 	public void stackOverflow() {
 		
-		final Thread t1 = new Thread("Demo-Thread-1") {
+		final Thread t1 = new Thread(Thread.currentThread().getThreadGroup(), new Runnable() {
+			
 			@Override
 			public void run() {
 				try
@@ -30,9 +31,8 @@ public class ThreadStackDemo {
 					System.err.println("!!!Got StackOverflowError!!!");
 					System.err.println("Stack size: " + e.getStackTrace().length);
 				}
-				
 			}
-		};
+		},  "Demo-Thread-1", 1000L);
 		t1.start();
 	}
 	

@@ -27,6 +27,12 @@ public class ThreadDeadLockDemo {
 				System.out.println("Thread 1 locks obj:");
 				synchronized(obj) {
 					System.out.println("Thread 1 locks another:");
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					synchronized (another) {
 						System.out.println("thread 1: some time it dead locks");
 					}
@@ -39,7 +45,14 @@ public class ThreadDeadLockDemo {
 			public void run() {
 				System.out.println("Thread 2 locks another:");
 				synchronized(another) {
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					System.out.println("Thread 2 locks obj:");
+					t1.interrupt();
 					synchronized (obj) {
 						System.out.println("thread 2: some time it dead locks");
 					}

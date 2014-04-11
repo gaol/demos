@@ -13,9 +13,9 @@ public class ThreadVolatileDemo {
 
 	private int v = 0;
 	
-	private volatile int vv = 0;
+	private int vv = 0;
 	
-//	@Demo(name = "nonVolatile", description = "shows the non-volatile keyword")
+	@Demo(name = "nonVolatile", description = "shows the non-volatile keyword")
 	public void nonVolatileDemo() {
 		
 		final Object obj = new Object();
@@ -70,22 +70,23 @@ public class ThreadVolatileDemo {
 		
 	}
 	
-//	@Demo(name = "volatile", description = "shows the volatile keyword")
+	@Demo(name = "volatile", description = "shows the volatile keyword")
 	public void volatileDemo() {
 		
 		Thread t1 = new Thread("Demo-Thread-SetValue") {
 			@Override
 			public void run() {
 				int loop = 10;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 				for(int i = 0;i<=loop;i++) {
 					int newV = i;
 					System.out.println("Set VV = " + newV);
 					vv = newV;
-//					try {
-//						Thread.sleep(1000);
-//					} catch (InterruptedException e) {
-//						e.printStackTrace();
-//					}
+					
 				}
 			}
 		};
@@ -95,13 +96,14 @@ public class ThreadVolatileDemo {
 			@Override
 			public void run() {
 				int loop = 10;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 				for(int i = 0;i<=loop;i++) {
 					System.out.println("Red VV: " + vv);
-//					try {
-//						Thread.sleep(1000);
-//					} catch (InterruptedException e) {
-//						e.printStackTrace();
-//					}
+					
 				}
 			}
 		};
