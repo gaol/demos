@@ -8,6 +8,7 @@ Run
 ====
 
 > cd common
+
 > ./demo.sh
 
 Run help to see the commands 
