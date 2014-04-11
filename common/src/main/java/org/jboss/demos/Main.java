@@ -47,12 +47,15 @@ public class Main {
 		Settings settings = new SettingsBuilder().logging(true).enableMan(true).create();
 		Prompt prompt = new Prompt(new TerminalString("[lgao@demos]$ ",
                 new TerminalColor(Color.GREEN, Color.DEFAULT, Color.Intensity.BRIGHT)));
+		CommandRegistryHolder holder = new CommandRegistryHolder();
 		CommandRegistry registry = new AeshCommandRegistryBuilder()
         .command(ExitCommand.class)
-        .command(HelpCommand.class)
+        .command(new HelpCommand(holder))
         .command(RunDemoCommand.class)
         .command(ListDemosCommand.class)
         .create();
+		
+		holder.registry = registry;
 		
         AeshConsole aeshConsole = new AeshConsoleBuilder().settings(settings)
                 .prompt(prompt)
@@ -73,9 +76,25 @@ public class Main {
 		
 	}
 	
+	private static class CommandRegistryHolder {
+		private CommandRegistry registry;
+	}
+	
 	@CommandDefinition(name="help", description="Print this help. help --cmd COMMAND for single command information.")
 	private static class HelpCommand implements Command<CommandInvocation> {
 
+		private HelpCommand(){}
+		private CommandRegistryHolder registryHolder;
+		private HelpCommand(CommandRegistryHolder registryHolder) {
+			super();
+			this.registryHolder = registryHolder;
+		}
+		
+		CommandRegistry getCommandRegistry() {
+			return this.registryHolder.registry;
+		}
+		
+		
 		@Arguments(completer = ListCommandsCompleter.class)
 		private List<String> cmds;
 		
@@ -111,10 +130,13 @@ public class Main {
 			@Override
 			public void complete(CompleterInvocation completerInvocation) {
 				String currentValue = completerInvocation.getGivenCompleteValue();
-//				completerInvocation.
-//				for (String cmdName: completerInvocation.getCommandRegistry().getAllCommandNames()) {
-//					
-//				}
+				HelpCommand helpCommand = (HelpCommand)completerInvocation.getCommand();
+				CommandRegistry registry = helpCommand.getCommandRegistry();
+				for (String cmdName: registry.getAllCommandNames()) {
+					if (cmdName.startsWith(currentValue)) {
+						completerInvocation.addCompleterValue(cmdName);
+					}
+				}
 			}
 			
 		}
